@@ -1,34 +1,175 @@
+using System.Text;
+using DartForge.EF.DAL;
+using DartForge.EF.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
-namespace DartForge.Api
+var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container.
+builder.Services.AddControllers().AddNewtonsoftJson(options =>
+    options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore
+);
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+builder.Services.AddDbContext<DFDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+);
+
+// ASP.NET Core Identity
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
-    public class Program
+    options.Password.RequireDigit = false;
+    options.Password.RequireLowercase = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequiredLength = 6;
+    options.User.RequireUniqueEmail = true;
+})
+.AddEntityFrameworkStores<DFDbContext>()
+.AddDefaultTokenProviders();
+
+// JWT Authentication
+var jwtKey = builder.Configuration["Jwt:Key"] ?? "DartTournamentCreatorSuperSecretKeyForJwtAuthentication2026!";
+var issuer = builder.Configuration["Jwt:Issuer"] ?? "DartTournamentCreator";
+var audience = builder.Configuration["Jwt:Audience"] ?? "DartTournamentCreatorClient";
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        public static void Main(string[] args)
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = issuer,
+        ValidAudience = audience,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+        ClockSkew = TimeSpan.Zero
+    };
+});
+
+builder.Services.AddAuthorization();
+
+// CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins(
+            "http://localhost:5173",
+            "http://localhost:49622",
+            "https://dartdashboard.landjugend-lasberg.at")
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials();
+    });
+});
+
+// Services
+builder.Services.AddScoped<IMatchMakerService, MatchMakerService>();
+builder.Services.AddScoped<IBoardService, BoardService>();
+builder.Services.AddScoped<ITournamentCodeGenerator, TournamentCodeGenerator>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ITournamentAuthorizationService, TournamentAuthorizationService>();
+builder.Services.AddScoped<IPublicTournamentService, PublicTournamentService>();
+
+var app = builder.Build();
+
+// Automatically apply pending database migrations and seed default user/codes if available
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var db = scope.ServiceProvider.GetRequiredService<DartDbContext>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var codeGenerator = scope.ServiceProvider.GetRequiredService<ITournamentCodeGenerator>();
+
+        if (db.Database.IsRelational())
         {
-            var builder = WebApplication.CreateBuilder(args);
+            db.Database.Migrate();
+        }
 
-            // Add services to the container.
-
-            builder.Services.AddControllers();
-            // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-            builder.Services.AddOpenApi();
-
-            var app = builder.Build();
-
-            // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
+        // Ensure initial user exists so legacy tournaments have an owner
+        var defaultUser = userManager.FindByEmailAsync("admin@dartturnier.local").GetAwaiter().GetResult();
+        if (defaultUser == null)
+        {
+            defaultUser = new ApplicationUser
             {
-                app.MapOpenApi();
+                UserName = "admin@dartturnier.local",
+                Email = "admin@dartturnier.local",
+                FirstName = "Admin",
+                LastName = "System",
+                EmailConfirmed = true,
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+            userManager.CreateAsync(defaultUser, "Admin123!").GetAwaiter().GetResult();
+        }
+
+        // Migrate any tournaments lacking UserId or Code
+        var legacyTournaments = db.Tournaments
+            .Where(t => string.IsNullOrEmpty(t.UserId) || string.IsNullOrEmpty(t.Code))
+            .ToList();
+
+        if (legacyTournaments.Any())
+        {
+            foreach (var t in legacyTournaments)
+            {
+                if (string.IsNullOrEmpty(t.UserId))
+                {
+                    t.UserId = defaultUser.Id;
+                }
+                if (string.IsNullOrEmpty(t.Code))
+                {
+                    t.Code = codeGenerator.GenerateUniqueTournamentCodeAsync().GetAwaiter().GetResult();
+                }
             }
+            db.SaveChanges();
+        }
 
-            app.UseHttpsRedirection();
+        // Migrate any legacy players, locations or boards lacking UserId
+        var legacyPlayers = db.Players.Where(p => string.IsNullOrEmpty(p.UserId)).ToList();
+        foreach (var p in legacyPlayers) p.UserId = defaultUser.Id;
 
-            app.UseAuthorization();
+        var legacyLocations = db.Locations.Where(l => string.IsNullOrEmpty(l.UserId)).ToList();
+        foreach (var l in legacyLocations) l.UserId = defaultUser.Id;
 
+        var legacyBoards = db.Boards.Where(b => string.IsNullOrEmpty(b.UserId)).ToList();
+        foreach (var b in legacyBoards) b.UserId = defaultUser.Id;
 
-            app.MapControllers();
-
-            app.Run();
+        if (legacyPlayers.Any() || legacyLocations.Any() || legacyBoards.Any())
+        {
+            db.SaveChanges();
         }
     }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Initialisierung / Migration der Datenbank konnte beim Start nicht abgeschlossen werden.");
+    }
 }
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+app.UseHttpsRedirection();
+
+app.UseCors("AllowFrontend");
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers();
+
+app.Run();
