@@ -19,4 +19,8 @@
     <ProjectReference Include="..\DartForge.EF\DartForge.EF.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Controllers\" />
+  </ItemGroup>
+
 </Project>

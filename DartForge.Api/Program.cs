@@ -1,10 +1,14 @@
-using System.Text;
+using DartForge.Api.Infrastructure;
+using DartForge.Api.Interfaces;
+using DartForge.Api.Services;
 using DartForge.EF.DAL;
 using DartForge.EF.Models;
+using Mapster;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -82,6 +86,11 @@ builder.Services.AddScoped<ITournamentCodeGenerator, TournamentCodeGenerator>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITournamentAuthorizationService, TournamentAuthorizationService>();
 builder.Services.AddScoped<IPublicTournamentService, PublicTournamentService>();
+builder.Services.AddMapster(); // Registriert TypeAdapterConfig & IMapper
+builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+builder.Services.AddScoped(typeof(ICrudService<,>), typeof(CrudService<,>));
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
 
 var app = builder.Build();
 
@@ -90,7 +99,7 @@ using (var scope = app.Services.CreateScope())
 {
     try
     {
-        var db = scope.ServiceProvider.GetRequiredService<DartDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<DFDbContext>();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var codeGenerator = scope.ServiceProvider.GetRequiredService<ITournamentCodeGenerator>();
 
@@ -117,16 +126,16 @@ using (var scope = app.Services.CreateScope())
 
         // Migrate any tournaments lacking UserId or Code
         var legacyTournaments = db.Tournaments
-            .Where(t => string.IsNullOrEmpty(t.UserId) || string.IsNullOrEmpty(t.Code))
+            .Where(t => string.IsNullOrEmpty(t.OwnerId) || string.IsNullOrEmpty(t.Code))
             .ToList();
 
         if (legacyTournaments.Any())
         {
             foreach (var t in legacyTournaments)
             {
-                if (string.IsNullOrEmpty(t.UserId))
+                if (string.IsNullOrEmpty(t.OwnerId))
                 {
-                    t.UserId = defaultUser.Id;
+                    t.OwnerId = defaultUser.Id;
                 }
                 if (string.IsNullOrEmpty(t.Code))
                 {
@@ -137,14 +146,14 @@ using (var scope = app.Services.CreateScope())
         }
 
         // Migrate any legacy players, locations or boards lacking UserId
-        var legacyPlayers = db.Players.Where(p => string.IsNullOrEmpty(p.UserId)).ToList();
-        foreach (var p in legacyPlayers) p.UserId = defaultUser.Id;
+        var legacyPlayers = db.Players.Where(p => string.IsNullOrEmpty(p.OwnerId)).ToList();
+        foreach (var p in legacyPlayers) p.OwnerId = defaultUser.Id;
 
-        var legacyLocations = db.Locations.Where(l => string.IsNullOrEmpty(l.UserId)).ToList();
-        foreach (var l in legacyLocations) l.UserId = defaultUser.Id;
+        var legacyLocations = db.Locations.Where(l => string.IsNullOrEmpty(l.OwnerId)).ToList();
+        foreach (var l in legacyLocations) l.OwnerId = defaultUser.Id;
 
-        var legacyBoards = db.Boards.Where(b => string.IsNullOrEmpty(b.UserId)).ToList();
-        foreach (var b in legacyBoards) b.UserId = defaultUser.Id;
+        var legacyBoards = db.Boards.Where(b => string.IsNullOrEmpty(b.OwnerId)).ToList();
+        foreach (var b in legacyBoards) b.OwnerId = defaultUser.Id;
 
         if (legacyPlayers.Any() || legacyLocations.Any() || legacyBoards.Any())
         {
