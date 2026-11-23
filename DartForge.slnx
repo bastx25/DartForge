@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="DartForge.Api/DartForge.Api.csproj" />
+  <Project Path="DartForge.Contracts/DartForge.Contracts.csproj" />
+  <Project Path="DartForge.EF/DartForge.EF.csproj" />
+  <Project Path="DartForge.Shared/DartForge.Shared.csproj" Id="9efe18f7-18de-4d20-9bb8-c06e2d019cd7" />
+</Solution>
