@@ -1,6 +1,6 @@
 ﻿namespace DartForge.Api.Infrastructure
 {
-    internal interface IUnitOfWork : IAsyncDisposable
+    public interface IUnitOfWork : IAsyncDisposable
     {
         /// <summary>
         /// Returns a repository bound to this unit of work's shared <see cref="SSAB.TCM.EF.DAL.DFDbContext"/>.

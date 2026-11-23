@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace DartForge.Api.Infrastructure
 {
-    internal static class MapsterTracing
+    public static class MapsterTracing
     {
         public static TDestination AdaptTraced<TDestination>(this object source, IMapper mapper)
         {

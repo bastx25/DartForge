@@ -2,7 +2,7 @@
 
 namespace DartForge.Api.Infrastructure
 {
-    internal interface IRepository<T> where T : class, new()
+    public interface IRepository<T> where T : class, new()
     {
         /// <summary>
         /// Gets all matching entities.

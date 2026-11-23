@@ -7,7 +7,7 @@ using System.Reflection;
 
 namespace DartForge.Api.Infrastructure
 {
-    internal static class RepositoryActivitySource
+    public static class RepositoryActivitySource
     {
         public const string Name = "SSAB.TCM.Api";
 

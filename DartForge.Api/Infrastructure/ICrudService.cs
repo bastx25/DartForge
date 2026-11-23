@@ -3,7 +3,7 @@ using System.Linq.Expressions;
 
 namespace DartForge.Api.Infrastructure
 {
-    internal interface ICrudService<TDto, TEntity>
+    public interface ICrudService<TDto, TEntity>
     where TDto : class
     where TEntity : class, new()
     {

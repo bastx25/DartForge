@@ -4,7 +4,7 @@ using System.Diagnostics;
 
 namespace DartForge.Api.Infrastructure
 {
-    internal sealed class UnitOfWork : IUnitOfWork
+    public sealed class UnitOfWork : IUnitOfWork
     {
         private readonly IDbContextFactory<DFDbContext> _contextFactory;
         private readonly Dictionary<Type, object> _repositories = new();

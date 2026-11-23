@@ -4,7 +4,7 @@ using System.Linq.Expressions;
 
 namespace DartForge.Api.Infrastructure
 {
-    internal sealed class CrudService<TDto, TEntity> : ICrudService<TDto, TEntity>
+    public sealed class CrudService<TDto, TEntity> : ICrudService<TDto, TEntity>
     where TDto : class
     where TEntity : class, new()
     {
