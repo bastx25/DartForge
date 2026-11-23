@@ -1,7 +1,8 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using DTC.Api.Models;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Reflection.Metadata.Ecma335;
 
-namespace DTC.Api.Models
+namespace DartForge.EF.Models
 {
     [Table("TournamentPlayers")]
     public class TournamentPlayer

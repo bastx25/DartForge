@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Reflection.Metadata.Ecma335;
 
-namespace DTC.Api.Models
+namespace DartForge.EF.Models
 {
     [Table("Availabilities")]
     public class Availability

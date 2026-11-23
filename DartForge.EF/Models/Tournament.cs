@@ -1,7 +1,8 @@
 using DartForge.Shared.Enums;
+using DTC.Api.Models;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace DTC.Api.Models
+namespace DartForge.EF.Models
 {
     [Table("Tournaments")]
     public class Tournament

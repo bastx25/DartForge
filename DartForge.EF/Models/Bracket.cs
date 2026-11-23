@@ -1,7 +1,7 @@
 using DartForge.Shared.Enums;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace DTC.Api.Models
+namespace DartForge.EF.Models
 {
     [Table("Brackets")]
     public class Bracket

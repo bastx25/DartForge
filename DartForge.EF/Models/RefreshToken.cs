@@ -1,3 +1,4 @@
+using DartForge.EF.Models;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DTC.Api.Models

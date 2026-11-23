@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 
-namespace DTC.Api.Models
+namespace DartForge.EF.Models
 {
     [Table("MatchParticipants")]
     public class MatchParticipant

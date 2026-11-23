@@ -1,6 +1,7 @@
+using DTC.Api.Models;
 using Microsoft.AspNetCore.Identity;
 
-namespace DTC.Api.Models
+namespace DartForge.EF.Models
 {
     public class ApplicationUser : IdentityUser
     {
