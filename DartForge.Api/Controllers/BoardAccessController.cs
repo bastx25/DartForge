@@ -118,10 +118,10 @@ public class BoardAccessController : ControllerBase
     {
         await using var uow = _unitOfWork;
 
-        // TODO: Set Braket on Running
+        // TODO: Set Bracket on Running
         var match = await uow.Repository<Match>().GetByKeyAsync(
             include: q => q
-                .Include(m => m.Braket)
+                .Include(m => m.Bracket)
                     .ThenInclude(r => r!.Tournament)
                 .Include(m => m.Participants)
                     .ThenInclude(p => p.TournamentPlayer)
@@ -169,7 +169,7 @@ public class BoardAccessController : ControllerBase
 
         var match = await uow.Repository<Match>().GetByKeyAsync(
             include: q => q
-                .Include(m => m.Braket)
+                .Include(m => m.Bracket)
                     .ThenInclude(r => r!.Tournament)
                 .Include(m => m.Participants)
                     .ThenInclude(p => p.TournamentPlayer)
@@ -230,7 +230,7 @@ public class BoardAccessController : ControllerBase
 
         try
         {
-            if (match.Braket?.Phase == BraketPhase.Knockout)
+            if (match.Bracket?.Phase == BracketPhase.Knockout)
             {
                 await _matchMakerService.AdvanceWinner(match);
             }

@@ -31,7 +31,7 @@ public class BoardController : ControllerBase
         _mapper = mapper;
     }
 
-    private string GetCurrentUserId()
+    private string GetCurrentOwnerId()
     {
         return User.FindFirstValue(ClaimTypes.NameIdentifier)
             ?? throw new UnauthorizedAccessException("Benutzer ist nicht authentifiziert.");
@@ -41,9 +41,9 @@ public class BoardController : ControllerBase
     public async Task<ActionResult<IEnumerable<BoardDto>>> GetAllAsync(
         CancellationToken cancellationToken = default)
     {
-        var userId = GetCurrentUserId();
+        var userId = GetCurrentOwnerId();
         var boards = await _boardRepo.GetAllAsync(
-            predicate: b => b.UserId == userId,
+            predicate: b => b.OwnerId == userId,
             cancellationToken: cancellationToken);
 
         return Ok(boards.AdaptTraced<List<BoardDto>>(_mapper));
@@ -54,7 +54,7 @@ public class BoardController : ControllerBase
         [FromRoute] int locationId,
         CancellationToken cancellationToken = default)
     {
-        var userId = GetCurrentUserId();
+        var userId = GetCurrentOwnerId();
         var hasLocationAccess = await _authService.HasLocationAccessAsync(locationId, userId);
         if (!hasLocationAccess)
         {
@@ -62,7 +62,7 @@ public class BoardController : ControllerBase
         }
 
         var boards = await _boardRepo.GetAllAsync(
-            predicate: b => b.LocationId == locationId && b.UserId == userId,
+            predicate: b => b.LocationId == locationId && b.OwnerId == userId,
             cancellationToken: cancellationToken);
 
         return Ok(boards.AdaptTraced<List<BoardDto>>(_mapper));
@@ -73,9 +73,9 @@ public class BoardController : ControllerBase
         [FromRoute] int id,
         CancellationToken cancellationToken = default)
     {
-        var userId = GetCurrentUserId();
+        var userId = GetCurrentOwnerId();
         var board = await _boardRepo.GetByKeyAsync(cancellationToken, id);
-        if (board is null || board.UserId != userId)
+        if (board is null || board.OwnerId != userId)
         {
             return NotFound(new { message = "Board nicht gefunden oder Zugriff verweigert." });
         }
@@ -88,7 +88,7 @@ public class BoardController : ControllerBase
         [FromBody] CreateBoardDto dto,
         CancellationToken cancellationToken = default)
     {
-        var userId = GetCurrentUserId();
+        var userId = GetCurrentOwnerId();
 
         var hasLocationAccess = await _authService.HasLocationAccessAsync(dto.LocationId, userId);
         if (!hasLocationAccess)
@@ -97,7 +97,7 @@ public class BoardController : ControllerBase
         }
 
         var entity = dto.AdaptTraced<Board>(_mapper);
-        entity.UserId = userId;
+        entity.OwnerId = userId;
 
         try
         {
@@ -116,9 +116,9 @@ public class BoardController : ControllerBase
         [FromBody] UpdateBoardDto dto,
         CancellationToken cancellationToken = default)
     {
-        var userId = GetCurrentUserId();
+        var userId = GetCurrentOwnerId();
         var existing = await _boardRepo.GetByKeyAsync(cancellationToken, id);
-        if (existing is null || existing.UserId != userId)
+        if (existing is null || existing.OwnerId != userId)
         {
             return NotFound(new { message = "Board nicht gefunden oder Zugriff verweigert." });
         }
@@ -144,9 +144,9 @@ public class BoardController : ControllerBase
         [FromRoute] int id,
         CancellationToken cancellationToken = default)
     {
-        var userId = GetCurrentUserId();
+        var userId = GetCurrentOwnerId();
         var existing = await _boardRepo.GetByKeyAsync(cancellationToken, id);
-        if (existing is null || existing.UserId != userId)
+        if (existing is null || existing.OwnerId != userId)
         {
             return NotFound(new { message = "Board nicht gefunden oder Zugriff verweigert." });
         }

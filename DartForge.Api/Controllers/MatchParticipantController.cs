@@ -35,7 +35,7 @@ public class MatchParticipantController : ControllerBase
         _mapper = mapper;
     }
 
-    private string GetCurrentUserId()
+    private string GetCurrentOwnerId()
     {
         return User.FindFirstValue(ClaimTypes.NameIdentifier)
             ?? throw new UnauthorizedAccessException("Benutzer ist nicht authentifiziert.");
@@ -46,7 +46,7 @@ public class MatchParticipantController : ControllerBase
         [FromRoute] int matchId,
         CancellationToken cancellationToken = default)
     {
-        var userId = GetCurrentUserId();
+        var userId = GetCurrentOwnerId();
         var hasAccess = await _authService.HasMatchAccessAsync(matchId, userId);
         if (!hasAccess)
         {
@@ -68,7 +68,7 @@ public class MatchParticipantController : ControllerBase
         [FromRoute] int id,
         CancellationToken cancellationToken = default)
     {
-        var userId = GetCurrentUserId();
+        var userId = GetCurrentOwnerId();
         var participant = await _participantRepo.GetByKeyAsync(
             include: q => q
                 .Include(p => p.TournamentPlayer)
@@ -97,7 +97,7 @@ public class MatchParticipantController : ControllerBase
         [FromBody] CreateMatchParticipantDto dto,
         CancellationToken cancellationToken = default)
     {
-        var userId = GetCurrentUserId();
+        var userId = GetCurrentOwnerId();
         var hasAccess = await _authService.HasMatchAccessAsync(dto.MatchId, userId);
         if (!hasAccess)
         {
@@ -119,7 +119,7 @@ public class MatchParticipantController : ControllerBase
         [FromBody] UpdateMatchParticipantDto dto,
         CancellationToken cancellationToken = default)
     {
-        var userId = GetCurrentUserId();
+        var userId = GetCurrentOwnerId();
         var existingParticipant = await _participantRepo.GetByKeyAsync(cancellationToken, id);
         if (existingParticipant is null)
         {
@@ -147,7 +147,7 @@ public class MatchParticipantController : ControllerBase
         [FromRoute] int id,
         CancellationToken cancellationToken = default)
     {
-        var userId = GetCurrentUserId();
+        var userId = GetCurrentOwnerId();
         var existing = await _participantRepo.GetByKeyAsync(cancellationToken, id);
         if (existing is null)
         {

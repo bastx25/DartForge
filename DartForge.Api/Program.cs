@@ -124,7 +124,7 @@ using (var scope = app.Services.CreateScope())
             userManager.CreateAsync(defaultUser, "Admin123!").GetAwaiter().GetResult();
         }
 
-        // Migrate any tournaments lacking UserId or Code
+        // Migrate any tournaments lacking OwnerId or Code
         var legacyTournaments = db.Tournaments
             .Where(t => string.IsNullOrEmpty(t.OwnerId) || string.IsNullOrEmpty(t.Code))
             .ToList();
@@ -145,7 +145,7 @@ using (var scope = app.Services.CreateScope())
             db.SaveChanges();
         }
 
-        // Migrate any legacy players, locations or boards lacking UserId
+        // Migrate any legacy players, locations or boards lacking OwnerId
         var legacyPlayers = db.Players.Where(p => string.IsNullOrEmpty(p.OwnerId)).ToList();
         foreach (var p in legacyPlayers) p.OwnerId = defaultUser.Id;
 

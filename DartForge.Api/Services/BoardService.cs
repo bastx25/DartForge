@@ -255,13 +255,13 @@ namespace DartForge.Api.Services
             var query = _context.Boards.Where(b => b.IsActive);
             if (!string.IsNullOrWhiteSpace(userId))
             {
-                query = query.Where(b => b.UserId == userId);
+                query = query.Where(b => b.OwnerId == userId);
             }
             return await query.OrderBy(x => x.Id).ToListAsync();
         }
 
         public async Task SetBoards(
-            List<Braket> brakets,
+            List<Bracket> brakets,
             DateTimeOffset startTime,
             int matchDuration,
             int breakMinutes,
@@ -273,11 +273,11 @@ namespace DartForge.Api.Services
                 throw new InvalidOperationException("Es sind noch keine aktiven Dartboards vorhanden. Bitte lege zuerst mindestens ein Dartboard an.");
 
             // Brackets nach Sequence sortieren, um die Runden chronologisch abzuarbeiten
-            var orderedBrakets = brakets.OrderByDescending(b => b.Sequence).ToList();
+            var orderedBrackets = brakets.OrderByDescending(b => b.Sequence).ToList();
 
             DateTimeOffset currentBracketStart = startTime;
 
-            foreach (var braket in orderedBrakets)
+            foreach (var braket in orderedBrackets)
             {
                 var matchesToSchedule = braket.Matches
                     .Where(m => m.Status != MatchStatus.Completed)

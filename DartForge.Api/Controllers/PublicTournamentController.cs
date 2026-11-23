@@ -89,13 +89,13 @@ public class PublicTournamentController : ControllerBase
     }
 
     [HttpGet("{code}/brakets/{braketId:int}/matches")]
-    public async Task<ActionResult<IEnumerable<MatchDto>>> GetBraketMatches(
+    public async Task<ActionResult<IEnumerable<MatchDto>>> GetBracketMatches(
         [FromRoute] string code,
         [FromRoute] int braketId,
         CancellationToken cancellationToken = default)
     {
         var tournament = await _publicTournamentService.GetTournamentByCodeAsync(code);
-        if (tournament is null || !tournament.Brakets.Any(b => b.Id == braketId))
+        if (tournament is null || !tournament.Brackets.Any(b => b.Id == braketId))
         {
             return NotFound(new { message = "Bracket oder Turnier nicht gefunden." });
         }
@@ -106,7 +106,7 @@ public class PublicTournamentController : ControllerBase
                 .Include(m => m.Participants)
                     .ThenInclude(p => p.TournamentPlayer)
                         .ThenInclude(tp => tp.Player),
-            predicate: m => m.BraketId == braketId,
+            predicate: m => m.BracketId == braketId,
             splitQuery: true,
             cancellationToken: cancellationToken);
 

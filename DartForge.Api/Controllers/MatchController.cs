@@ -36,19 +36,19 @@ public class MatchController : ControllerBase
         _mapper = mapper;
     }
 
-    private string GetCurrentUserId()
+    private string GetCurrentOwnerId()
     {
         return User.FindFirstValue(ClaimTypes.NameIdentifier)
             ?? throw new UnauthorizedAccessException("Benutzer ist nicht authentifiziert.");
     }
 
     [HttpGet("braket/{braketId:int}")]
-    public async Task<ActionResult<IEnumerable<MatchDto>>> GetByBraketId(
+    public async Task<ActionResult<IEnumerable<MatchDto>>> GetByBracketId(
         [FromRoute] int braketId,
         CancellationToken cancellationToken = default)
     {
-        var userId = GetCurrentUserId();
-        var hasAccess = await _authService.HasBraketAccessAsync(braketId, userId);
+        var userId = GetCurrentOwnerId();
+        var hasAccess = await _authService.HasBracketAccessAsync(braketId, userId);
         if (!hasAccess)
         {
             return NotFound(new { message = "Runde nicht gefunden oder Zugriff verweigert." });
@@ -60,7 +60,7 @@ public class MatchController : ControllerBase
                 .Include(m => m.Participants)
                     .ThenInclude(p => p.TournamentPlayer)
                         .ThenInclude(tp => tp.Player),
-            predicate: m => m.BraketId == braketId,
+            predicate: m => m.BracketId == braketId,
             splitQuery: true,
             cancellationToken: cancellationToken);
 
@@ -72,7 +72,7 @@ public class MatchController : ControllerBase
         [FromRoute] int id,
         CancellationToken cancellationToken = default)
     {
-        var userId = GetCurrentUserId();
+        var userId = GetCurrentOwnerId();
         var hasAccess = await _authService.HasMatchAccessAsync(id, userId);
         if (!hasAccess)
         {
@@ -103,7 +103,7 @@ public class MatchController : ControllerBase
         [FromBody] CreateMatchDto dto,
         CancellationToken cancellationToken = default)
     {
-        var userId = GetCurrentUserId();
+        var userId = GetCurrentOwnerId();
         if (dto.BoardId.HasValue)
         {
             var hasBoardAccess = await _authService.HasBoardAccessAsync(dto.BoardId.Value, userId);
@@ -128,7 +128,7 @@ public class MatchController : ControllerBase
         [FromBody] UpdateMatchDto dto,
         CancellationToken cancellationToken = default)
     {
-        var userId = GetCurrentUserId();
+        var userId = GetCurrentOwnerId();
         var hasAccess = await _authService.HasMatchAccessAsync(id, userId);
         if (!hasAccess)
         {
@@ -169,7 +169,7 @@ public class MatchController : ControllerBase
         [FromRoute] int id,
         CancellationToken cancellationToken = default)
     {
-        var userId = GetCurrentUserId();
+        var userId = GetCurrentOwnerId();
         var hasAccess = await _authService.HasMatchAccessAsync(id, userId);
         if (!hasAccess)
         {

@@ -23,7 +23,7 @@ public class LocationController : ControllerBase
         _mapper = mapper;
     }
 
-    private string GetCurrentUserId()
+    private string GetCurrentOwnerId()
     {
         return User.FindFirstValue(ClaimTypes.NameIdentifier)
             ?? throw new UnauthorizedAccessException("Benutzer ist nicht authentifiziert.");
@@ -33,9 +33,9 @@ public class LocationController : ControllerBase
     public async Task<ActionResult<IEnumerable<LocationDto>>> GetAll(
         CancellationToken cancellationToken = default)
     {
-        var userId = GetCurrentUserId();
+        var userId = GetCurrentOwnerId();
         var locations = await _locationRepo.GetAllAsync(
-            predicate: l => l.UserId == userId,
+            predicate: l => l.OwnerId == userId,
             cancellationToken: cancellationToken);
 
         return Ok(locations.AdaptTraced<List<LocationDto>>(_mapper));
@@ -46,9 +46,9 @@ public class LocationController : ControllerBase
         [FromRoute] int id,
         CancellationToken cancellationToken = default)
     {
-        var userId = GetCurrentUserId();
+        var userId = GetCurrentOwnerId();
         var location = await _locationRepo.GetByKeyAsync(cancellationToken, id);
-        if (location is null || location.UserId != userId)
+        if (location is null || location.OwnerId != userId)
         {
             return NotFound(new { message = "Austragungsort nicht gefunden oder Zugriff verweigert." });
         }
@@ -61,9 +61,9 @@ public class LocationController : ControllerBase
         [FromBody] CreateLocationDto dto,
         CancellationToken cancellationToken = default)
     {
-        var userId = GetCurrentUserId();
+        var userId = GetCurrentOwnerId();
         var entity = dto.AdaptTraced<Location>(_mapper);
-        entity.UserId = userId;
+        entity.OwnerId = userId;
 
         var created = await _locationRepo.AddAsync(entity, cancellationToken);
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created.AdaptTraced<LocationDto>(_mapper));
@@ -75,9 +75,9 @@ public class LocationController : ControllerBase
         [FromBody] UpdateLocationDto dto,
         CancellationToken cancellationToken = default)
     {
-        var userId = GetCurrentUserId();
+        var userId = GetCurrentOwnerId();
         var existing = await _locationRepo.GetByKeyAsync(cancellationToken, id);
-        if (existing is null || existing.UserId != userId)
+        if (existing is null || existing.OwnerId != userId)
         {
             return NotFound(new { message = "Austragungsort nicht gefunden oder Zugriff verweigert." });
         }
@@ -97,9 +97,9 @@ public class LocationController : ControllerBase
         [FromRoute] int id,
         CancellationToken cancellationToken = default)
     {
-        var userId = GetCurrentUserId();
+        var userId = GetCurrentOwnerId();
         var existing = await _locationRepo.GetByKeyAsync(cancellationToken, id);
-        if (existing is null || existing.UserId != userId)
+        if (existing is null || existing.OwnerId != userId)
         {
             return NotFound(new { message = "Austragungsort nicht gefunden oder Zugriff verweigert." });
         }

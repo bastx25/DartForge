@@ -39,7 +39,7 @@ namespace DartForge.Api.Services
                 .AnyAsync(g => g.Id == groupId && g.Tournament.OwnerId == ownerId);
         }
 
-        public async Task<bool> HasBraketAccessAsync(int braketId, string ownerId)
+        public async Task<bool> HasBracketAccessAsync(int braketId, string ownerId)
         {
             if (string.IsNullOrWhiteSpace(ownerId)) return false;
 

@@ -1,7 +1,7 @@
 ﻿using DartForge.Api.Infrastructure;
 using DartForge.Api.Interfaces;
 using DartForge.EF.Models;
-using DTC.Api.Dtos.Braket;
+using DTC.Api.Dtos.Bracket;
 using DTC.Api.Dtos.Match;
 using DTC.Api.Interfaces;
 using DTC.Api.Models;
@@ -36,18 +36,18 @@ public class BracketController : ControllerBase
         _mapper = mapper;
     }
 
-    private string GetCurrentUserId()
+    private string GetCurrentOwnerId()
     {
         return User.FindFirstValue(ClaimTypes.NameIdentifier)
             ?? throw new UnauthorizedAccessException("Benutzer ist nicht authentifiziert.");
     }
 
     [HttpGet("tournament/{tournamentId:int}")]
-    public async Task<ActionResult<IEnumerable<BraketDto>>> GetByTournament(
+    public async Task<ActionResult<IEnumerable<BracketDto>>> GetByTournament(
         [FromRoute] int tournamentId,
         CancellationToken cancellationToken = default)
     {
-        var userId = GetCurrentUserId();
+        var userId = GetCurrentOwnerId();
         var hasAccess = await _authService.HasTournamentAccessAsync(tournamentId, userId);
         if (!hasAccess)
         {
@@ -58,16 +58,16 @@ public class BracketController : ControllerBase
             predicate: b => b.TournamentId == tournamentId,
             cancellationToken: cancellationToken);
 
-        return Ok(brakets.AdaptTraced<List<BraketDto>>(_mapper));
+        return Ok(brakets.AdaptTraced<List<BracketDto>>(_mapper));
     }
 
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<BraketDto>> GetById(
+    public async Task<ActionResult<BracketDto>> GetById(
         [FromRoute] int id,
         CancellationToken cancellationToken = default)
     {
-        var userId = GetCurrentUserId();
-        var hasAccess = await _authService.HasBraketAccessAsync(id, userId);
+        var userId = GetCurrentOwnerId();
+        var hasAccess = await _authService.HasBracketAccessAsync(id, userId);
         if (!hasAccess)
         {
             return NotFound(new { message = "Bracket nicht gefunden oder Zugriff verweigert." });
@@ -79,35 +79,35 @@ public class BracketController : ControllerBase
             return NotFound();
         }
 
-        return Ok(braket.AdaptTraced<BraketDto>(_mapper));
+        return Ok(braket.AdaptTraced<BracketDto>(_mapper));
     }
 
     [HttpPost]
-    public async Task<ActionResult<BraketDto>> Create(
-        [FromBody] CreateBraketDto dto,
+    public async Task<ActionResult<BracketDto>> Create(
+        [FromBody] CreateBracketDto dto,
         CancellationToken cancellationToken = default)
     {
-        var userId = GetCurrentUserId();
+        var userId = GetCurrentOwnerId();
         var hasAccess = await _authService.HasTournamentAccessAsync(dto.TournamentId, userId);
         if (!hasAccess)
         {
             return NotFound(new { message = "Turnier nicht gefunden oder Zugriff verweigert." });
         }
 
-        var entity = dto.AdaptTraced<Braket>(_mapper);
+        var entity = dto.AdaptTraced<Bracket>(_mapper);
         var created = await _braketRepo.AddAsync(entity, cancellationToken);
 
-        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created.AdaptTraced<BraketDto>(_mapper));
+        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created.AdaptTraced<BracketDto>(_mapper));
     }
 
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(
         [FromRoute] int id,
-        [FromBody] UpdateBraketDto dto,
+        [FromBody] UpdateBracketDto dto,
         CancellationToken cancellationToken = default)
     {
-        var userId = GetCurrentUserId();
-        var hasAccess = await _authService.HasBraketAccessAsync(id, userId);
+        var userId = GetCurrentOwnerId();
+        var hasAccess = await _authService.HasBracketAccessAsync(id, userId);
         if (!hasAccess)
         {
             return NotFound(new { message = "Bracket nicht gefunden oder Zugriff verweigert." });
@@ -131,8 +131,8 @@ public class BracketController : ControllerBase
         [FromRoute] int id,
         CancellationToken cancellationToken = default)
     {
-        var userId = GetCurrentUserId();
-        var hasAccess = await _authService.HasBraketAccessAsync(id, userId);
+        var userId = GetCurrentOwnerId();
+        var hasAccess = await _authService.HasBracketAccessAsync(id, userId);
         if (!hasAccess)
         {
             return NotFound(new { message = "Bracket nicht gefunden oder Zugriff verweigert." });
@@ -149,7 +149,7 @@ public class BracketController : ControllerBase
 
     [AllowAnonymous]
     [HttpGet("{id:int}/matches")]
-    public async Task<IActionResult> GetMatchesByBraketId(
+    public async Task<IActionResult> GetMatchesByBracketId(
         [FromRoute] int id,
         CancellationToken cancellationToken = default)
     {
@@ -161,7 +161,7 @@ public class BracketController : ControllerBase
                     .Include(m => m.Participants)
                         .ThenInclude(p => p.TournamentPlayer)
                             .ThenInclude(tp => tp.Player),
-                predicate: m => m.BraketId == id,
+                predicate: m => m.BracketId == id,
                 splitQuery: true,
                 cancellationToken: cancellationToken);
 

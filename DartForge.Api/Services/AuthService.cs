@@ -113,7 +113,7 @@ namespace DartForge.Api.Services
             {
                 // Replay attack detection: revoke all tokens for this user
                 var activeTokens = await _context.RefreshTokens
-                    .Where(r => r.UserId == refreshToken.UserId && r.RevokedAt == null)
+                    .Where(r => r.OwnerId == refreshToken.OwnerId && r.RevokedAt == null)
                     .ToListAsync();
 
                 foreach (var t in activeTokens)
@@ -225,7 +225,7 @@ namespace DartForge.Api.Services
 
             var refreshToken = new RefreshToken
             {
-                UserId = user.Id,
+                OwnerId = user.Id,
                 Token = tokenString,
                 ExpiresAt = DateTimeOffset.UtcNow.AddDays(7),
                 CreatedAt = DateTimeOffset.UtcNow,

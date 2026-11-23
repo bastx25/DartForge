@@ -18,14 +18,14 @@ namespace DartForge.Api.Services
         private readonly IGroupRepository _groupRepo;
         private readonly Random _random = Random.Shared;
 
-        private readonly IBraketRepository _braketRepo;
+        private readonly IBracketRepository _braketRepo;
         private readonly IBoardService _boardService;
 
         public MatchMakerService(DartDbContext context,
             ITournamentPlayerRepository tournamentPlayerRepository,
             IMatchRepository matchRepository,
             IGroupRepository groupRepository,
-            IBraketRepository braketRepository,
+            IBracketRepository braketRepository,
             IBoardService boardService)
         {
             _context = context;
@@ -41,7 +41,7 @@ namespace DartForge.Api.Services
             ArgumentNullException.ThrowIfNull(options);
 
             await _groupRepo.DeleteAllTournamentGroups(tournamentId);
-            await _braketRepo.DeleteAllTournamentBraketsAsync(tournamentId);
+            await _braketRepo.DeleteAllTournamentBracketsAsync(tournamentId);
 
             await _tournamentPlayerRepo.SetTournamentPlayers(tournamentId, options.PlayerIds, options);
 
@@ -94,7 +94,7 @@ namespace DartForge.Api.Services
             }
 
             var hasGeneratedData = await _context.Groups.AnyAsync(g => g.TournamentId == tournamentId)
-                || await _context.Brakets.AnyAsync(r => r.TournamentId == tournamentId);
+                || await _context.Brackets.AnyAsync(r => r.TournamentId == tournamentId);
             if (hasGeneratedData)
                 throw new InvalidOperationException("Für dieses Turnier wurden bereits Gruppen oder Runden generiert.");
             #endregion Validation
@@ -169,7 +169,7 @@ namespace DartForge.Api.Services
                 throw new InvalidOperationException("Die Gruppennamen müssen innerhalb des Turniers eindeutig sein.");
 
             await _groupRepo.DeleteAllTournamentGroups(tournamentId);
-            await _braketRepo.DeleteAllTournamentBraketsAsync(tournamentId);
+            await _braketRepo.DeleteAllTournamentBracketsAsync(tournamentId);
 
             var genOptions = new GenerateGroupsDto
             {
@@ -227,7 +227,7 @@ namespace DartForge.Api.Services
             ValidateSchedule(startTime, matchDuration, breakMinutes);
 
             await ScheduleGroupMatches(groups);
-            await _boardService.SetBoards(groups, startTime, matchDuration, breakMinutes, tournament.UserId);
+            await _boardService.SetBoards(groups, startTime, matchDuration, breakMinutes, tournament.OwnerId);
 
             if (tournament.Config != null)
             {
@@ -252,7 +252,7 @@ namespace DartForge.Api.Services
                     .Select(gp => gp.TournamentPlayerId)
                     .ToList();
 
-                var candidates = CreateBraketRobinCandidates(group, players);
+                var candidates = CreateBracketRobinCandidates(group, players);
                 scheduledMatches.AddRange(candidates);
             }
 
@@ -305,7 +305,7 @@ namespace DartForge.Api.Services
                 throw new InvalidOperationException("Nicht genügend qualifizierte Spieler für die K.-o.-Phase vorhanden (mindestens 2 erforderlich).");
             }
 
-            await CreateKnockoutBrakets(tournamentId, options, qualifiedPlayers);
+            await CreateKnockoutBrackets(tournamentId, options, qualifiedPlayers);
         }
 
         private static bool IsPowerOf2(int count)
@@ -313,9 +313,9 @@ namespace DartForge.Api.Services
             return count > 0 && (count & (count - 1)) == 0;
         }
 
-        private async Task CreateKnockoutBrakets(int tournamentId, GenerateGroupsDto options, List<TournamentPlayer> qualifiedPlayers)
+        private async Task CreateKnockoutBrackets(int tournamentId, GenerateGroupsDto options, List<TournamentPlayer> qualifiedPlayers)
         {
-            await _braketRepo.DeleteAllTournamentBraketsAsync(tournamentId);
+            await _braketRepo.DeleteAllTournamentBracketsAsync(tournamentId);
 
             // Nächste Zweierpotenz berechnen (mindestens 2)
             int bracketSize = 2;
@@ -324,7 +324,7 @@ namespace DartForge.Api.Services
                 bracketSize *= 2;
             }
 
-            var brakets = CreateEmptyBrakets(tournamentId, bracketSize);
+            var brakets = CreateEmptyBrackets(tournamentId, bracketSize);
 
             // Spieler sortieren je nach gewähltem KnockoutDrawMode:
             List<TournamentPlayer> orderedPlayers;
@@ -369,7 +369,7 @@ namespace DartForge.Api.Services
             }
 
             var pairings = GenerateBracketSeedPairings(bracketSize);
-            var firstBraket = brakets[0];
+            var firstBracket = brakets[0];
             var firstRoundMatches = new List<Match>();
             var byeMatches = new List<Match>();
 
@@ -383,8 +383,8 @@ namespace DartForge.Api.Services
                 {
                     firstRoundMatches.Add(new Match
                     {
-                        BraketId = firstBraket.Id,
-                        Braket = firstBraket,
+                        BracketId = firstBracket.Id,
+                        Bracket = firstBracket,
                         BoardId = null,
                         Status = MatchStatus.Scheduled,
                         Participants = new List<MatchParticipant>
@@ -411,8 +411,8 @@ namespace DartForge.Api.Services
                     var byePlayer = p1 ?? p2!;
                     var byeMatch = new Match
                     {
-                        BraketId = firstBraket.Id,
-                        Braket = firstBraket,
+                        BracketId = firstBracket.Id,
+                        Bracket = firstBracket,
                         BoardId = null,
                         Status = MatchStatus.Completed,
                         Participants = new List<MatchParticipant>
@@ -430,7 +430,7 @@ namespace DartForge.Api.Services
                     byeMatches.Add(byeMatch);
                 }
             }
-            firstBraket.Matches = firstRoundMatches;
+            firstBracket.Matches = firstRoundMatches;
 
             // Weitere K.-o.-Runden mit leeren Matches initialisieren
             for (int b = 1; b < brakets.Count; b++)
@@ -441,8 +441,8 @@ namespace DartForge.Api.Services
                 {
                     matches.Add(new Match
                     {
-                        BraketId = braket.Id,
-                        Braket = braket,
+                        BracketId = braket.Id,
+                        Bracket = braket,
                         BoardId = null,
                         Status = MatchStatus.Scheduled
                     });
@@ -456,9 +456,9 @@ namespace DartForge.Api.Services
                 options.StartTime ?? DateTimeOffset.UtcNow,
                 options.MatchDurationMinutes ?? 30,
                 options.BreakBetweenMatchesMinutes ?? 5,
-                tournament?.UserId);
+                tournament?.OwnerId);
 
-            await _context.Brakets.AddRangeAsync(brakets);
+            await _context.Brackets.AddRangeAsync(brakets);
             await _context.SaveChangesAsync();
 
             // Freilose (Byes) automatisch in die nächste Runde vorrücken
@@ -494,18 +494,18 @@ namespace DartForge.Api.Services
             return pairings;
         }
 
-        private List<Braket> CreateEmptyBrakets(int tournamentId, int count)
+        private List<Bracket> CreateEmptyBrackets(int tournamentId, int count)
         {
-            var brakets = new List<Braket>();
+            var brakets = new List<Bracket>();
 
             for (int i = count; i >= 2; i /= 2)
             {
-                brakets.Add(new Braket
+                brakets.Add(new Bracket
                 {
                     TournamentId = tournamentId,
                     Sequence = i/2,
                     Name = GetKoGroupName(i),
-                    Phase = BraketPhase.Knockout
+                    Phase = BracketPhase.Knockout
                 });
             }
 
@@ -538,7 +538,7 @@ namespace DartForge.Api.Services
 
             #endregion
 
-            await _braketRepo.DeleteAllTournamentBraketsAsync(tournamentId);
+            await _braketRepo.DeleteAllTournamentBracketsAsync(tournamentId);
 
             //var groups = await _groupRepo.GetGroupsAsync(tournamentId);
             var groups = await _context.Groups.Where(g => g.TournamentId == tournamentId).Include(g => g.Matches).ToListAsync();
@@ -700,7 +700,7 @@ namespace DartForge.Api.Services
             await ScheduleGroupMatches(groups);
 
             var tournament = await _context.Tournaments.FindAsync(tournamentId);
-            await _boardService.SetBoards(groups, startTime, matchDuration, breakMinutes, tournament?.UserId);
+            await _boardService.SetBoards(groups, startTime, matchDuration, breakMinutes, tournament?.OwnerId);
 
             return groups.First();
         }
@@ -901,7 +901,7 @@ namespace DartForge.Api.Services
         public async Task AdvanceKnockoutAsync(int matchId)
         {
             var match = await _context.Matches
-                .Include(m => m.Braket)
+                .Include(m => m.Bracket)
                     .ThenInclude(r => r!.Tournament)
                 .Include(m => m.Participants)
                     .ThenInclude(p => p.TournamentPlayer)
@@ -960,7 +960,7 @@ namespace DartForge.Api.Services
         }
 
 
-        private static List<MatchCandidate> CreateBraketRobinCandidates(
+        private static List<MatchCandidate> CreateBracketRobinCandidates(
     Group group,
     List<int> players)
         {
@@ -1026,8 +1026,8 @@ namespace DartForge.Api.Services
 
         public async Task AdvanceWinner(Match match)
         {
-            var braket = match.Braket ?? await _context.Brakets.FirstOrDefaultAsync(b => b.Id == match.BraketId);
-            if (braket == null || braket.Phase != BraketPhase.Knockout)
+            var braket = match.Bracket ?? await _context.Brackets.FirstOrDefaultAsync(b => b.Id == match.BracketId);
+            if (braket == null || braket.Phase != BracketPhase.Knockout)
             {
                 return;
             }
@@ -1035,19 +1035,19 @@ namespace DartForge.Api.Services
             var winner = match.Participants.FirstOrDefault(p => p.IsWinner);
             if (winner == null) return;
 
-            var brakets = await _context.Brakets
+            var brakets = await _context.Brackets
                 .Where(b => b.TournamentId == braket.TournamentId)
                 .Include(b => b.Matches)
                     .ThenInclude(m => m.Participants)
                 .ToListAsync();
 
-            var curBraket = brakets.FirstOrDefault(b => b.Id == braket.Id);
-            if (curBraket == null) return;
+            var curBracket = brakets.FirstOrDefault(b => b.Id == braket.Id);
+            if (curBracket == null) return;
 
-            var nextBraket = brakets.OrderByDescending(b => b.Sequence).FirstOrDefault(b => b.Sequence < curBraket.Sequence);
-            if (nextBraket == null) return;
+            var nextBracket = brakets.OrderByDescending(b => b.Sequence).FirstOrDefault(b => b.Sequence < curBracket.Sequence);
+            if (nextBracket == null) return;
 
-            var matchIndex = curBraket.Matches
+            var matchIndex = curBracket.Matches
                 .OrderBy(m => m.Id)
                 .ToList()
                 .FindIndex(m => m.Id == match.Id);
@@ -1055,7 +1055,7 @@ namespace DartForge.Api.Services
             if (matchIndex < 0) return;
 
             var targetMatchIndex = matchIndex / 2;
-            var orderedNextMatches = nextBraket.Matches.OrderBy(m => m.Id).ToList();
+            var orderedNextMatches = nextBracket.Matches.OrderBy(m => m.Id).ToList();
             if (targetMatchIndex >= orderedNextMatches.Count) return;
 
             var nextMatch = orderedNextMatches[targetMatchIndex];

@@ -67,7 +67,7 @@ namespace DartForge.Api.Services
                 StartDate = tournament.StartDate,
                 Config = tournament.Config?.ToTournamentConfigDto(),
                 Groups = groups.Select(g => g.ToGroupDto()).ToList(),
-                Brakets = brakets.Select(b => b.ToBraketDto()).ToList()
+                Brackets = brakets.Select(b => b.ToBracketDto()).ToList()
             };
         }
 

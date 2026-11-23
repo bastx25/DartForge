@@ -25,7 +25,7 @@ public class PlayerController : ControllerBase
         _mapper = mapper;
     }
 
-    private string GetCurrentUserId()
+    private string GetCurrentOwnerId()
     {
         return User.FindFirstValue(ClaimTypes.NameIdentifier)
             ?? throw new UnauthorizedAccessException("Benutzer ist nicht authentifiziert.");
@@ -35,9 +35,9 @@ public class PlayerController : ControllerBase
     public async Task<ActionResult<IEnumerable<PlayerDto>>> GetAllPlayers(
         CancellationToken cancellationToken = default)
     {
-        var userId = GetCurrentUserId();
+        var userId = GetCurrentOwnerId();
         var players = await _playerRepo.GetAllAsync(
-            predicate: p => p.UserId == userId,
+            predicate: p => p.OwnerId == userId,
             cancellationToken: cancellationToken);
 
         return Ok(players.AdaptTraced<List<PlayerDto>>(_mapper));
@@ -48,9 +48,9 @@ public class PlayerController : ControllerBase
         [FromRoute] int id,
         CancellationToken cancellationToken = default)
     {
-        var userId = GetCurrentUserId();
+        var userId = GetCurrentOwnerId();
         var player = await _playerRepo.GetByKeyAsync(cancellationToken, id);
-        if (player is null || player.UserId != userId)
+        if (player is null || player.OwnerId != userId)
         {
             return NotFound(new { message = "Spieler nicht gefunden oder Zugriff verweigert." });
         }
@@ -63,9 +63,9 @@ public class PlayerController : ControllerBase
         [FromBody] CreatePlayerDto playerDto,
         CancellationToken cancellationToken = default)
     {
-        var userId = GetCurrentUserId();
+        var userId = GetCurrentOwnerId();
         var playerEntity = playerDto.AdaptTraced<Player>(_mapper);
-        playerEntity.UserId = userId;
+        playerEntity.OwnerId = userId;
 
         var createdPlayer = await _playerRepo.AddAsync(playerEntity, cancellationToken);
         return Ok(createdPlayer.AdaptTraced<PlayerDto>(_mapper));
@@ -77,9 +77,9 @@ public class PlayerController : ControllerBase
         [FromBody] UpdatePlayerDto playerDto,
         CancellationToken cancellationToken = default)
     {
-        var userId = GetCurrentUserId();
+        var userId = GetCurrentOwnerId();
         var existingPlayer = await _playerRepo.GetByKeyAsync(cancellationToken, id);
-        if (existingPlayer is null || existingPlayer.UserId != userId)
+        if (existingPlayer is null || existingPlayer.OwnerId != userId)
         {
             return NotFound(new { message = "Spieler nicht gefunden oder Zugriff verweigert." });
         }
@@ -99,9 +99,9 @@ public class PlayerController : ControllerBase
         [FromRoute] int id,
         CancellationToken cancellationToken = default)
     {
-        var userId = GetCurrentUserId();
+        var userId = GetCurrentOwnerId();
         var existingPlayer = await _playerRepo.GetByKeyAsync(cancellationToken, id);
-        if (existingPlayer is null || existingPlayer.UserId != userId)
+        if (existingPlayer is null || existingPlayer.OwnerId != userId)
         {
             return BadRequest("Spieler konnte nicht gelöscht werden! Ist der Spieler noch in einem Turnier?");
         }
