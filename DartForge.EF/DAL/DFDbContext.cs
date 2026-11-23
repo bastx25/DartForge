@@ -1,4 +1,6 @@
-﻿using DTC.Api.Models;
+﻿using DartForge.EF.Models;
+using DTC.Api.Models;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -6,27 +8,10 @@ using System.Text;
 
 namespace DartForge.EF.DAL
 {
-    internal class DFDbContext : DbContext
+    public class DFDbContext : IdentityDbContext<ApplicationUser>
     {
-        private static string _dbConnectionName = "ssab_pai";
-        private static string _dbConnectionString = null;
-        public static string DbConnectionName
+        public DFDbContext(DbContextOptions<DFDbContext> dbContextOptions) : base(dbContextOptions)
         {
-            get { return _dbConnectionName; }
-            set { _dbConnectionName = value; _dbConnectionString = null; }
-        }
-
-        public DFDbContext()
-        {
-            InitializeConnString();
-        }
-
-        private static void InitializeConnString()
-        {
-            if (_dbConnectionString == null)
-            {
-                _dbConnectionString = System.Configuration.ConfigurationManager.ConnectionStrings[DbConnectionName].ConnectionString;
-            }
         }
 
         public virtual DbSet<ApplicationUser> ApplicationUsers { get; set; }
@@ -43,14 +28,6 @@ namespace DartForge.EF.DAL
         public virtual DbSet<TournamentConfig> TournamentConfigs { get; set; }
         public virtual DbSet<TournamentPlayer> TournamentPlayers { get; set; }
 
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            if (!optionsBuilder.IsConfigured)
-            {
-                optionsBuilder
-                    .UseSqlServer(_dbConnectionString);
-            }
-        }
 
     }
 }
