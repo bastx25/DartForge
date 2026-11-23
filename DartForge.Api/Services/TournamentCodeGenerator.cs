@@ -1,19 +1,19 @@
 using System.Security.Cryptography;
 using DartForge.Api.Interfaces;
-using DTC.Api.Data;
+using DartForge.EF.DAL;
 using Microsoft.EntityFrameworkCore;
 
 namespace DartForge.Api.Services
 {
     public class TournamentCodeGenerator : ITournamentCodeGenerator
     {
-        private readonly DartDbContext _context;
+        private readonly DFDbContext _context;
         // Unambiguous characters: no 0/O, 1/I, L
         private const string Chars = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
         private const int CodeLength = 6;
         private const string Prefix = "DART-";
 
-        public TournamentCodeGenerator(DartDbContext context)
+        public TournamentCodeGenerator(DFDbContext context)
         {
             _context = context;
         }

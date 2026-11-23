@@ -1,19 +1,16 @@
 using DartForge.Api.Interfaces;
+using DartForge.EF.DAL;
 using DartForge.EF.Models;
-using DTC.Api.Data;
-using DTC.Api.Dtos.Public;
-using DTC.Api.Dtos.Tournament;
-using DTC.Api.Enums;
-using DTC.Api.Mappers;
+using DartForge.Shared.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace DartForge.Api.Services
 {
     public class PublicTournamentService : IPublicTournamentService
     {
-        private readonly DartDbContext _context;
+        private readonly DFDbContext _context;
 
-        public PublicTournamentService(DartDbContext context)
+        public PublicTournamentService(DFDbContext context)
         {
             _context = context;
         }
@@ -25,7 +22,7 @@ namespace DartForge.Api.Services
             var normalizedCode = code.Trim().ToUpperInvariant();
 
             var tournament = await _context.Tournaments
-                .Include(t => t.Config)
+                .Include(t => t.Configurations)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(t => t.Code == normalizedCode);
 
@@ -37,7 +34,7 @@ namespace DartForge.Api.Services
         public async Task<PublicTournamentDto?> GetTournamentByIdAsync(int id)
         {
             var tournament = await _context.Tournaments
-                .Include(t => t.Config)
+                .Include(t => t.Configurations)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(t => t.Id == id);
 
@@ -54,7 +51,7 @@ namespace DartForge.Api.Services
                 .AsNoTracking()
                 .ToListAsync();
 
-            var brakets = await _context.Brakets
+            var brakets = await _context.Brackets
                 .Where(b => b.TournamentId == tournament.Id)
                 .OrderByDescending(b => b.Sequence)
                 .AsNoTracking()

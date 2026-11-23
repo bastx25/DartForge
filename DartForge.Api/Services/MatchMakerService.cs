@@ -1,11 +1,7 @@
 using DartForge.Api.Interfaces;
+using DartForge.EF.DAL;
 using DartForge.EF.Models;
-using DTC.Api.Data;
-using DTC.Api.Dtos.MatchMaker;
-using DTC.Api.Enums;
-using DTC.Api.Interfaces;
 using DTC.Api.Models;
-using DTC.Api.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using System.Collections.Frozen;
@@ -16,7 +12,7 @@ namespace DartForge.Api.Services
 {
     public class MatchMakerService : IMatchMakerService
     {
-        private readonly DartDbContext _context;
+        private readonly DFDbContext _context;
         private readonly ITournamentPlayerRepository _tournamentPlayerRepo;
         private readonly IMatchRepository _matchRepo;
         private readonly IGroupRepository _groupRepo;
@@ -51,7 +47,7 @@ namespace DartForge.Api.Services
 
             var tournament = await _context.Tournaments
                 .Include(t => t.TournamentPlayers)
-                .Include(t => t.Config)
+                .Include(t => t.Configurations)
                 .FirstOrDefaultAsync(t => t.Id == tournamentId);
 
             #region Validation
@@ -116,7 +112,7 @@ namespace DartForge.Api.Services
                     TournamentId = tournamentId,
                     Sequence = index + 1,
                     Name = CreateGroupName(index),
-                    QualifiersCount = options.QualifiersPerGroup
+                    QualifiersPerGroup = options.QualifiersPerGroup
                 });
             }
 
@@ -131,14 +127,14 @@ namespace DartForge.Api.Services
             }
 
             var startTime = options.StartTime ?? tournament.StartDate;
-            var matchDuration = options.MatchDurationMinutes ?? tournament.Config.MatchDurationMinutes;
-            var breakMinutes = options.BreakBetweenMatchesMinutes ?? tournament.Config.BreakBetweenMatchesMinutes;
+            var matchDuration = options.MatchDurationMinutes ?? tournament.Configurations.First().MatchDurationMinutes;
+            var breakMinutes = options.BreakBetweenMatchesMinutes ?? tournament.Configurations.First().BreakBetweenMatchesMinutes;
 
             ValidateSchedule(startTime, matchDuration, breakMinutes);
 
 
             await ScheduleGroupMatches(groups);
-            await _boardService.SetBoards(groups, startTime, matchDuration, breakMinutes, tournament.UserId);
+            await _boardService.SetBoards(groups, startTime, matchDuration, breakMinutes, tournament.OwnerId);
 
             await _context.Groups.AddRangeAsync(groups);
             await _context.SaveChangesAsync();
@@ -207,7 +203,7 @@ namespace DartForge.Api.Services
                     TournamentId = tournamentId,
                     Sequence = index + 1,
                     Name = groupItem.Name.Trim(),
-                    QualifiersCount = groupItem.QualifiersCount
+                    QualifiersPerGroup = groupItem.QualifiersCount
                 };
 
                 foreach (var playerId in groupItem.PlayerIds)
@@ -236,7 +232,7 @@ namespace DartForge.Api.Services
             if (tournament.Config != null)
             {
                 tournament.Config.GroupCount = groups.Count;
-                tournament.Config.QualifiersPerGroup = groups.Max(g => g.QualifiersCount);
+                tournament.Config.QualifiersPerGroup = groups.Max(g => g.QualifiersPerGroup);
                 tournament.Config.MatchDurationMinutes = matchDuration;
                 tournament.Config.BreakBetweenMatchesMinutes = breakMinutes;
                 tournament.Config.KnockoutDrawMode = dto.KnockoutDrawMode;
