@@ -7,7 +7,7 @@ namespace DTC.Api.Models
     public class Tournament
     {
         public int Id { get; set; }
-        public string UserId { get; set; } = string.Empty;
+        public string OwnerId { get; set; } = string.Empty;
         public int Locationid { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Code { get; set; } = string.Empty;
@@ -16,7 +16,7 @@ namespace DTC.Api.Models
         public DateTimeOffset StartDate { get; set; }
 
         //Navigation
-        public ApplicationUser User { get; set; } = null!;
+        public ApplicationUser Owner { get; set; } = null!;
         public Location Location { get; set; } = null!;
         public ICollection<TournamentPlayer> TournamentPlayers { get; set; }
             = new List<TournamentPlayer>();

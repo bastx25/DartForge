@@ -6,13 +6,13 @@ namespace DTC.Api.Models
     public class Player
     {
         public int Id { get; set; }
-        public string UserId { get; set; } = string.Empty;
+        public string OwnerId { get; set; } = string.Empty;
         public string FirstName { get; set; } = string.Empty;
         public string? LastName { get; set; }
         public string? Nickname { get; set; }
 
         //Navigation
-        public ApplicationUser User { get; set; } = null!;
+        public ApplicationUser Owner { get; set; } = null!;
         public ICollection<TournamentPlayer> TournamentPlayers { get; set; } = new List<TournamentPlayer>();
     }
 }

@@ -6,12 +6,12 @@ namespace DTC.Api.Models
     public class Location
     {
         public int Id { get; set; }
-        public string UserId { get; set; } = string.Empty;
+        public string OwnerId { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty; // z. B. "Sporthalle Freistadt"
         public string? Address { get; set; }
 
         //Navigation
-        public ApplicationUser User { get; set; } = null!;
+        public ApplicationUser Owner { get; set; } = null!;
         public ICollection<Board> Boards { get; set; } = new List<Board>();
         public ICollection<Tournament> Tournaments { get; set; } = new List<Tournament>();
     }

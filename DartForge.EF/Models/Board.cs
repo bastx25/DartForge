@@ -6,7 +6,7 @@ namespace DTC.Api.Models
     public class Board
     {
         public int Id { get; set; }
-        public string UserId { get; set; } = string.Empty;
+        public string OwnerId { get; set; } = string.Empty;
         public int LocationId { get; set; }
         public string? Label { get; set; }
         public bool IsActive { get; set; } = true;
@@ -14,6 +14,6 @@ namespace DTC.Api.Models
         //Navigation
         public ICollection<Match> Matches { get; set; } = new List<Match>();
         public Location Location { get; set; } = null!;
-        public ApplicationUser User { get; set; } = null!;
+        public ApplicationUser Owner { get; set; } = null!;
     }
 }
